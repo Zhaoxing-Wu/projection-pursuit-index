@@ -1,0 +1,401 @@
+---
+title: "Penalized Discriminant Analysis on Simulated Examples"
+output: html_document
+---
+
+```{r packages}
+source("fun.R")
+library(classPP)
+library(tidyr)
+library(DiscriMiner)
+library(ggplot2)
+library(latex2exp)
+```
+
+## Simulation 1: percentage of important variables
+
+```{r}
+lda_acc  = c()
+pda4_acc = c()
+pda6_acc = c()
+pda8_acc = c()
+
+x= seq(0.03, 0.05, by = 0.001) #percentage of importance variables
+for (i in x){ 
+  print(i)
+  n = 40
+  p = 500
+  num_unimp = round((1-i)*p, digits = 0)
+  num_imp = p - num_unimp
+  
+  lda_temp  = c()
+  pda4_temp = c()
+  pda6_temp = c()
+  pda8_temp = c()
+  
+  for (j in 1:20){ #compute accuracy score for 20 times
+    df = scale(as.data.frame(cbind(
+      rbind(matrix(rnorm(n/2*num_imp,2.2),,num_imp),
+            matrix(rnorm(n/2*num_imp, -2.2),,num_imp)),
+      matrix(rnorm(n*num_unimp),,num_unimp))))
+    class = c(rep(1, n/2), rep(2, n/2))
+
+    ind = sample(1:40, 10, replace=FALSE)
+    test = df[ind,]
+    train = df[-ind,]
+    cls_test = class[ind]
+    cls_train = class[-ind]
+  
+    PP.opt = PP.optimize.anneal("LDA",2,train,cls_train)
+    proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+    proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+    lda_temp = c(lda_temp, misclass(PP.opt$proj.best, t(train), t(test), 
+                                    cls_train, cls_test))
+    
+    PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.4)
+    proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+    proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+    pda4_temp = c(pda4_temp, misclass(PP.opt$proj.best, t(train), t(test), 
+                                      cls_train, cls_test))
+    
+    PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.6)
+    proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+    proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+    pda6_temp = c(pda6_temp, misclass(PP.opt$proj.best, t(train), t(test), 
+                                      cls_train, cls_test))
+    
+    PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.8)
+    proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+    proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+    pda8_temp = c(pda8_temp, misclass(PP.opt$proj.best, t(train), t(test), 
+                                      cls_train, cls_test))
+  }
+  lda_acc  = c(lda_acc,  mean(lda_temp))
+  pda4_acc = c(pda4_acc, mean(pda4_temp))
+  pda6_acc = c(pda6_acc, mean(pda6_temp))
+  pda8_acc = c(pda8_acc, mean(pda8_temp))
+}
+
+write.csv(cbind(x, lda_acc, pda4_acc, pda6_acc, pda8_acc),
+          "1_perc_imp_var.csv")
+```
+
+## Simulation 2: Ratio between dimension and observation
+
+```{r}
+lda_acc  = c()
+pda4_acc = c()
+pda6_acc = c()
+pda8_acc = c()
+x = seq(10, 100, by = 6)
+for (i in x){ 
+  print(i)
+  n = i
+  p = 500
+  num_imp = 10
+  num_unimp = p-num_imp
+  
+  lda_temp  = c()
+  pda4_temp = c()
+  pda6_temp = c()
+  pda8_temp = c()
+  
+  for (j in 1:20){ #compute accuracy score for 20 times
+    df = scale(as.data.frame(cbind(
+      rbind(matrix(rnorm(n/2*num_imp, 2.2),,num_imp),
+            matrix(rnorm(n/2*num_imp, -2.2),,num_imp)),
+      matrix(rnorm(n*num_unimp),,num_unimp))))
+    class = c(rep(1, n/2), rep(2, n/2))
+
+    ind = sample(1:n, round(n*0.25, 0), replace=FALSE)
+    test = df[ind,]
+    train = df[-ind,]
+    cls_test = class[ind]
+    cls_train = class[-ind]
+  
+    PP.opt = PP.optimize.anneal("LDA",2,train,cls_train)
+    proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+    proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+    lda_temp = c(lda_temp, misclass(PP.opt$proj.best, t(train), t(test), 
+                                    cls_train, cls_test))
+    
+    PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.4)
+    proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+    proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+    pda4_temp = c(pda4_temp, misclass(PP.opt$proj.best, t(train), t(test), 
+                                      cls_train, cls_test))
+    
+    PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.6)
+    proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+    proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+    pda6_temp = c(pda6_temp, misclass(PP.opt$proj.best, t(train), t(test),
+                                      cls_train, cls_test))
+    
+    PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.8)
+    proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+    proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+    pda8_temp = c(pda8_temp, misclass(PP.opt$proj.best, t(train), t(test), 
+                                      cls_train, cls_test))
+  }
+  lda_acc  = c(lda_acc,  mean(lda_temp))
+  pda4_acc = c(pda4_acc, mean(pda4_temp))
+  pda6_acc = c(pda6_acc, mean(pda6_temp))
+  pda8_acc = c(pda8_acc, mean(pda8_temp))
+}
+
+plot(x, lda_acc, type = "l", ylim = c(0, 1), col='coral4', lwd = 2)
+lines(x, pda4_acc, col='#698B69', lwd = 2)
+lines(x, pda6_acc, col='#79CDCD', lwd = 2)
+lines(x, pda8_acc, col='#CD950C', lwd = 2)
+
+write.csv(cbind(x, lda_acc, pda4_acc, pda6_acc, pda8_acc), "2_ratio_dim_obs.csv")
+```
+
+## Simulation 3: effect of outliers
+
+```{r}
+lda_acc  = c()
+pda4_acc = c()
+pda6_acc = c()
+pda8_acc = c()
+x = seq(0, 16, by = 1)
+for (i in x){ 
+  n = 40
+  p = 500
+  num_imp = 10
+  num_unimp = p-num_imp
+  
+    
+  lda_temp  = c()
+  pda4_temp = c()
+  pda6_temp = c()
+  pda8_temp = c()
+  for (j in 1:20){ 
+    df = scale(as.data.frame(cbind(
+      rbind(matrix(rnorm(n/2*num_imp, 2.2),,num_imp), 
+            matrix(rnorm(n/2*num_imp, -2.2),,num_imp)),
+      matrix(rnorm(n*num_unimp),,num_unimp))))
+  
+    if (i != 0){
+      #for (var in 1:num_imp){ #add outliers to all important variables
+      for (var in (num_imp+1):p){ 
+        #add outliers to all variables except important variables
+        for (num_outlier in 1:i){
+          ind = sample.int(n,1)
+          df[ind, var] = rnorm(1, 0, 15)
+        }
+      }
+    }
+  
+    df = scale(df)
+    class = c(rep(1, n/2), rep(2, n/2))
+
+    ind = sample(1:n, round(n*0.25, 0), replace=FALSE)
+    test = df[ind,]
+    train = df[-ind,]
+    cls_test = class[ind]
+    cls_train = class[-ind]
+
+    PP.opt = PP.optimize.anneal("LDA",2,train,cls_train)
+    proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+    proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+    lda_temp = c(lda_temp, misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test))
+    
+    PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.4)
+    proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+    proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+    pda4_temp = c(pda4_temp, misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test))
+    
+    PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.6)
+    proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+    proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+    pda6_temp = c(pda6_temp, misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test))
+    
+    PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.8)
+    proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+    proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+    pda8_temp = c(pda8_temp, misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test))
+  }
+  lda_acc  = c(lda_acc,  mean(lda_temp))
+  pda4_acc = c(pda4_acc, mean(pda4_temp))
+  pda6_acc = c(pda6_acc, mean(pda6_temp))
+  pda8_acc = c(pda8_acc, mean(pda8_temp))
+}
+
+plot(x, lda_acc, type = "l", ylim = c(0, 1), col='coral4', lwd = 2)
+lines(x, pda4_acc, col='#698B69', lwd = 2)
+lines(x, pda6_acc, col='#79CDCD', lwd = 2)
+lines(x, pda8_acc, col='#CD950C', lwd = 2)
+
+write.csv(cbind(x, lda_acc, pda4_acc, pda6_acc, pda8_acc), "4_outliers.csv")
+```
+
+## Simulation 4: number of classes
+
+```{r}
+lda_acc  = c()
+pda4_acc = c()
+pda6_acc = c()
+pda8_acc = c()
+x = seq(2, 12, by = 1)
+for (i in x){
+  print(i)
+  n = 20*i
+  p = 500
+  num_imp = 10
+  num_unimp = p-num_imp
+  
+  lda_temp  = c()
+  pda4_temp = c()
+  pda6_temp = c()
+  pda8_temp = c()
+  for (j in 1:20){
+    df = rbind(matrix(rnorm(20*num_imp, 0),,num_imp),
+               matrix(rnorm(20*num_imp, ),,num_imp))
+    class = c(rep(1, n/i), rep(2, n/i))
+    mean = 4
+    cls = 2
+    if (i!=2){
+      for (j in 1:(i-2)){
+        mean = 4 + mean
+        cls = 1 + cls
+        df = rbind(df, matrix(rnorm(20*num_imp, mean=mean),,num_imp))
+        class = c(class, rep(cls, n/i))
+      }
+    }
+    
+    df = scale(as.data.frame(cbind(df, 
+                                   matrix(rnorm(n*num_unimp),,num_unimp))))
+  
+    ind = sample(1:n, round(n*0.25, 0), replace=FALSE)
+    test = df[ind,]
+    train = df[-ind,]
+    cls_test = class[ind]
+    cls_train = class[-ind]
+  
+    PP.opt = PP.optimize.anneal("LDA",2,train,cls_train)
+    proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+    proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+    lda_temp = c(lda_temp, misclass(PP.opt$proj.best, t(train), t(test), 
+                                    cls_train, cls_test))
+    
+    PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.4)
+    proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+    proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+    pda4_temp = c(pda4_temp, misclass(PP.opt$proj.best, t(train), t(test), 
+                                      cls_train, cls_test))
+    
+    PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.6)
+    proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+    proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+    pda6_temp = c(pda6_temp, misclass(PP.opt$proj.best, t(train), t(test), 
+                                      cls_train, cls_test))
+    
+    PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.8)
+    proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+    proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+    pda8_temp = c(pda8_temp, misclass(PP.opt$proj.best, t(train), t(test), 
+                                      cls_train, cls_test))
+  }
+  lda_acc  = c(lda_acc,  mean(lda_temp))
+  pda4_acc = c(pda4_acc, mean(pda4_temp))
+  pda6_acc = c(pda6_acc, mean(pda6_temp))
+  pda8_acc = c(pda8_acc, mean(pda8_temp))
+}
+
+write.csv(cbind(x, lda_acc, pda4_acc, pda6_acc, pda8_acc), "3_num_classes.csv")
+```
+
+
+## PLOT
+
+```{r}
+df = read.csv("../data/1_perc_imp_var.csv")
+plot(df$x, df$lda_acc, type = "l", ylim = c(0, 1), col='coral4', lwd = 2,
+     xlab = "Percentage of important variables", ylab = "Accuracy")
+lines(df$x, df$pda4_acc, col='#698B69', lwd = 2)
+lines(df$x, df$pda6_acc, col='#79CDCD', lwd = 2)
+lines(df$x, df$pda8_acc, col='#CD950C', lwd = 2)
+
+legend(x = "bottomright",
+       legend = c("LDA", 
+                  TeX(r'(PDA $\lambda=0.4$)'),
+                  TeX(r'(PDA $\lambda=0.6$)'),
+                  TeX(r'(PDA $\lambda=0.8$)')),
+       lty = 1,
+       col = c('coral4', '#698B69', '#79CDCD', '#CD950C'),
+       lwd = 2)          
+```  
+
+```{r}
+df = read.csv("../data/2_ratio_dim_obs.csv")
+plot(df$x/500, df$lda_acc, type = "l", ylim = c(0, 1), col='coral4', lwd = 2,
+     xlab = "Ratio between number of observations and dimensions", ylab = "Accuracy")
+lines(df$x/500, df$pda4_acc, col='#698B69', lwd = 2)
+lines(df$x/500, df$pda6_acc, col='#79CDCD', lwd = 2)
+lines(df$x/500, df$pda8_acc, col='#CD950C', lwd = 2)
+
+legend(x = "bottomright",
+       legend = c("LDA", 
+                  TeX(r'(PDA $\lambda=0.4$)'),
+                  TeX(r'(PDA $\lambda=0.6$)'),
+                  TeX(r'(PDA $\lambda=0.8$)')),
+       lty = 1,
+       col = c('coral4', '#698B69', '#79CDCD', '#CD950C'),
+       lwd = 2)          
+```
+
+```{r}
+df = read.csv("../data/3_num_classes.csv")
+plot(df$x, df$lda_acc, type = "l", ylim = c(0, 1), col='coral4', lwd = 2,
+     xlab = "Number of classes", ylab = "Accuracy")
+lines(df$x, df$pda4_acc, col='#698B69', lwd = 2)
+lines(df$x, df$pda6_acc, col='#79CDCD', lwd = 2)
+lines(df$x, df$pda8_acc, col='#CD950C', lwd = 2)
+
+legend(x = "topright",
+       legend = c("LDA", 
+                  TeX(r'(PDA $\lambda=0.4$)'),
+                  TeX(r'(PDA $\lambda=0.6$)'),
+                  TeX(r'(PDA $\lambda=0.8$)')),
+       lty = 1,
+       col = c('coral4', '#698B69', '#79CDCD', '#CD950C'),
+       lwd = 2)          
+```
+
+```{r}
+par(mfrow = c(1, 2)) 
+df = read.csv("../data/4_outliers_imp.csv")
+plot(df$x, df$lda_acc, type = "l", ylim = c(0, 1), col='coral4', lwd = 2,
+     xlab = "Number of outliers added to important variables", ylab = "Accuracy")
+lines(df$x, df$pda4_acc, col='#698B69', lwd = 2)
+lines(df$x, df$pda6_acc, col='#79CDCD', lwd = 2)
+lines(df$x, df$pda8_acc, col='#CD950C', lwd = 2)
+
+legend(x = "bottomright",
+       legend = c("LDA", 
+                  TeX(r'(PDA $\lambda=0.4$)'),
+                  TeX(r'(PDA $\lambda=0.6$)'),
+                  TeX(r'(PDA $\lambda=0.8$)')),
+       lty = 1,
+       col = c('coral4', '#698B69', '#79CDCD', '#CD950C'),
+       lwd = 2)   
+
+df = read.csv("./simulate_data/4_outliers.csv")
+plot(df$x, df$lda_acc, type = "l", ylim = c(0, 1), col='coral4', lwd = 2,
+     xlab = "Number of outliers added to all variables", ylab = "Accuracy")
+lines(df$x, df$pda4_acc, col='#698B69', lwd = 2)
+lines(df$x, df$pda6_acc, col='#79CDCD', lwd = 2)
+lines(df$x, df$pda8_acc, col='#CD950C', lwd = 2)
+
+legend(x = "bottomright",
+       legend = c("LDA", 
+                  TeX(r'(PDA $\lambda=0.4$)'),
+                  TeX(r'(PDA $\lambda=0.6$)'),
+                  TeX(r'(PDA $\lambda=0.8$)')),
+       lty = 1,
+       col = c('coral4', '#698B69', '#79CDCD', '#CD950C'),
+       lwd = 2)  
+```
+
+

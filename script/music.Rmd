@@ -1,0 +1,152 @@
+---
+title: "Penalized Discriminant Analysis on Music Dataset"
+output: html_document
+date: '2022-07-09'
+---
+
+```{r}
+source("fun.R")
+library(classPP)
+library(tidyr)
+library(DiscriMiner)
+```
+
+# Music
+
+```{r}
+df = read.csv("../data/music.csv")
+df$name = substring(df$name, 19)
+temp = separate(df, name, 
+                into = c("class", "artist", "rm"), sep="_") 
+df = temp[, -3]
+music = as.matrix(df[,-c(1, 2)])
+music = scale(music)
+class = df$class
+
+ind = sample(1:52, 13, replace=FALSE)
+test = music[ind,]
+train = music[-ind,]
+cls_test = class[ind]
+cls_train = class[-ind]
+cls_tot = levels(as.factor(class))
+```
+
+### genre
+
+```{r}
+#S(music, class, "PDA", 2)
+
+par(mfrow = c(2, 2)) 
+PP.opt = PP.optimize.anneal("LDA",2,train,cls_train)
+proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
+title("LDA")
+misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
+
+
+PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.4)
+proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
+title("PDA, lambda = 0.4")
+misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
+
+PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.8)
+proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
+title("PDA, lambda = 0.8")
+misclass(PP.opt$proj.best,t(train),t(test), cls_train, cls_test)
+```
+
+```{r}
+par(mar=c(1,1,1,1))
+par(mfrow = c(2, 2)) 
+PP.opt = PP.optimize.anneal("LDA",2,train,cls_train)
+proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
+err = misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
+title("LDA")
+
+PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.4)
+proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
+err = misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
+title(TeX(r'(PDA $\lambda=0.4$)'))
+
+PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.6)
+proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
+err = misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
+title(TeX(r'(PDA $\lambda=0.6$)'))
+
+PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.8)
+proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
+err = misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
+title(TeX(r'(PDA $\lambda=0.8$)'))
+```
+
+```{r}
+cross_validation(music, class_artist, 10, seq(0, 1, 0.1), "temp.png")
+```
+
+### artist
+
+```{r}
+class_artist = df$artist
+cls_test = class_artist[ind]
+cls_train = class_artist[-ind]
+cls_tot = levels(as.factor(class_artist))
+
+#S(music, class, "PDA", 2)
+par(mfrow = c(2, 2)) 
+PP.opt = PP.optimize.anneal("LDA",2,train,cls_train)
+proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
+title("LDA")
+misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
+
+
+PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.4)
+proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
+title("PDA, lambda = 0.4")
+misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
+
+PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.8)
+proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
+title("PDA, lambda = 0.8")
+misclass(PP.opt$proj.best,t(train),t(test), cls_train, cls_test)
+```
+
+```{r}
+PP.opt.lda.genre = PP.optimize.anneal("LDA",1,music,class)
+PP.opt.lda.artist = PP.optimize.anneal("LDA",1,music,class_artist)
+PP.opt.pda.artist = PP.optimize.anneal("PDA",1, music,class_artist,lambda = 0.8)
+PP.opt.pda.genre = PP.optimize.anneal("PDA",1,music,class,lambda = 0.8)
+
+par(mfrow = c(2, 2)) 
+barplot(height = as.numeric(abs(PP.opt.lda.genre[["proj.best"]])), names = as.factor(1:81))
+title("LDA(genre)")
+barplot(height = as.numeric(abs(PP.opt.lda.artist[["proj.best"]])), names = as.factor(1:81))
+title("LDA(artist)")
+barplot(height = as.numeric(abs(PP.opt.pda.genre[["proj.best"]])), names = as.factor(1:81))
+title("PDA(genre)")
+barplot(height = as.numeric(abs(PP.opt.pda.artist[["proj.best"]])), names = as.factor(1:81))
+title("PDA(artist)")
+```
+
+```{r}
+cross_validation(music, class_artist, 10, c(0.4, 0.6, 0.8))
+```
+
