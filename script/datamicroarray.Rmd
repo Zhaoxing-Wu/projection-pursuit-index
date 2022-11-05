@@ -9,53 +9,19 @@ library(datamicroarray) #contain all microarray datasets used
 source("fun.R")
 library(classPP)
 library(tidyr)
+library(dplyr)
 library(DiscriMiner) 
+library(caret)
 describe_data()
 ```
 
 ```{r}
-data('singh', package = 'datamicroarray')
+#load dataset
+data('singh', package = 'datamicroarray') #change to choose different datasets
 df = as.data.frame(scale(singh[["x"]]))
-class = singh[["y"]]
-filename = "./rst_image/cv_singh.png"
-S(as.matrix(df), class, "PDA", 2, seq(0, 1, 0.01), filename)
+class = as.factor(as.numeric(singh[["y"]]))
 
-
-data('yeoh', package = 'datamicroarray')
-df = as.data.frame(scale(yeoh[["x"]]))
-class = yeoh[["y"]]
-filename = "./rst_image/cv_yeoh.png"
-S(as.matrix(df), class, "PDA", 2, seq(0, 1, 0.01), filename)
-
-
-data('burczynski', package = 'datamicroarray')
-df = as.data.frame(scale(burczynski[["x"]]))
-class = burczynski[["y"]]
-filename = "./rst_image/cv_burczynski.png"
-S(as.matrix(df), class, "PDA", 2, seq(0, 1, 0.01), filename)
-```
-
-```{r}
-data('singh', package = 'datamicroarray')
-df = as.data.frame(scale(singh[["x"]]))
-class = as.numeric(singh[["y"]])
-filename = "./rst_image/cv_singh.png"
- cross_validation(df, class, 10, seq(0, 1, 0.01), filename)
-```
-
-
-```{r}
-#change "yeoh" to use different microarray datasets
-data('yeoh', package = 'datamicroarray')
-df = as.data.frame(scale(yeoh[["x"]]))
-class = as.numeric(yeoh[["y"]])
-filename = "./rst_image/cv_yeoh.png"
-cross_validation(df, class, 10, seq(0, 1, 0.05), filename)
-```
-
-
-```{r}
-library(dplyr)
+#train test split
 set.seed(122)
 df$class = class
 df$id = 1:nrow(df) #for row identification, remove later
@@ -68,43 +34,60 @@ cls_test = test$class
 test = subset(test, select = -c(id, class))
 train = subset(train, select = -c(id, class))
 cls_tot = levels(as.factor(class))
-
 ```
 
 ```{r}
-pdf(filename)
-par(mar=c(1,1,1,1))
+#plot projection pursuit plots
 par(mfrow = c(2, 2)) 
 PP.opt = PP.optimize.anneal("LDA",2,train,cls_train)
 proj.data.test = as.matrix(test)%*%PP.opt$proj.best
 proj.data.train = as.matrix(train)%*%PP.opt$proj.best
 plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
-err = misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
-title(paste("LDA, misclass=", 1-err))
+err = acc(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
+title(paste("LDA, misclass=", 
+            acc(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)))
 
 PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.4)
 proj.data.test = as.matrix(test)%*%PP.opt$proj.best
 proj.data.train = as.matrix(train)%*%PP.opt$proj.best
 plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
-err = misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
-title(paste("PDA, lambda = 0.4, misclass=", 1-err))
+err = acc(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
+title(paste("PDA, lambda = 0.4, misclass=", 
+            acc(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)))
 
 PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.6)
 proj.data.test = as.matrix(test)%*%PP.opt$proj.best
 proj.data.train = as.matrix(train)%*%PP.opt$proj.best
 plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
-err = misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
-title(paste("PDA, lambda = 0.6, misclass=", 1-err))
+err = acc(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
+title(paste("PDA, lambda = 0.6, misclass=", 
+            acc(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)))
 
 PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.8)
 proj.data.test = as.matrix(test)%*%PP.opt$proj.best
 proj.data.train = as.matrix(train)%*%PP.opt$proj.best
 plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
-err = misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
-title(paste("PDA, lambda = 0.8, misclass=", 1-err))
-dev.off()
+err = acc(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
+title(paste("PDA, lambda = 0.8, misclass=", 
+            acc(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)))
 ```
 
+```{r}
+#implement svm
+train2 = cbind(as.data.frame(train), cls_train)
+train_ctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+svm_classifier <- train(cls_train ~., data = train2, 
+                               method = "svmLinear", 
+                               trControl=train_ctrl,
+                               tuneLength = 10)
+print(sum(predict(svm_classifier, test) == cls_test)/nrow(test))
+
+svm_classifier <- train(cls_train ~., data = train2, 
+                               method = "svmRadial", 
+                               trControl=train_ctrl,
+                               tuneLength = 10)
+print(sum(predict(svm_classifier, test) == cls_test)/nrow(test))
+```
 
 
 

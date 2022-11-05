@@ -11,7 +11,7 @@ library(DiscriMiner) #function withinSS()
 #dim: the projection dimension
 #hyper: the list of hyperparameters
 #filename: the file name for the output plot
-S = function(data, class, method, dim, hyper, filename){
+S = function(data, class, method, dim, hyper){
   S = c()
   for (i in hyper){ #iterate through each hyperparameter
     PP.opt = PP.optimize.anneal(method,dim,data,class,lambda = i)
@@ -21,12 +21,10 @@ S = function(data, class, method, dim, hyper, filename){
   }
   
   #output plot
-  png(filename, width=4, height=4, units="in", res=300)
   smoothingSpline = smooth.spline(hyper, S, spar=0.8)
   plot(hyper, S)
   lines(smoothingSpline, col = "red")
   abline(h=1, col="blue")
-  dev.off()
 }
 
 
@@ -58,7 +56,7 @@ plot_test_train = function(proj.data.test, proj.data.train, cls_test, cls_train,
 
 
 ################################################################################
-## Accuracy score 
+## Accuracy score in PDA
 #a: the optimal projection (PP.opt$proj.best)
 #train: traversed train dataset
 #test: traversed test dataset
@@ -87,7 +85,7 @@ acc = function(a, train, test, cls_train, cls_test){
 
 
 ################################################################################
-##Cross validation for hyperparameter tuning
+##Cross validation for hyperparameter tuning in PDA
 #df: the dataset
 #class: vector of classes of all samples
 #k: number of folds

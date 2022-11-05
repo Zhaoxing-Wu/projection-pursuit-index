@@ -9,11 +9,13 @@ source("fun.R")
 library(classPP)
 library(tidyr)
 library(DiscriMiner)
+library(caret)
 ```
 
 # Music
 
 ```{r}
+#read in dataset & train-test-split
 df = read.csv("../data/music.csv")
 df$name = substring(df$name, 19)
 temp = separate(df, name, 
@@ -34,66 +36,52 @@ cls_tot = levels(as.factor(class))
 ### genre
 
 ```{r}
-#S(music, class, "PDA", 2)
-
+#implement lda & pda
 par(mfrow = c(2, 2)) 
 PP.opt = PP.optimize.anneal("LDA",2,train,cls_train)
 proj.data.test = as.matrix(test)%*%PP.opt$proj.best
 proj.data.train = as.matrix(train)%*%PP.opt$proj.best
 plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
 title("LDA")
-misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
-
+acc(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
 
 PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.4)
 proj.data.test = as.matrix(test)%*%PP.opt$proj.best
 proj.data.train = as.matrix(train)%*%PP.opt$proj.best
 plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
 title("PDA, lambda = 0.4")
-misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
+acc(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
+
+PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.6)
+proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
+title("PDA, lambda = 0.4")
+acc(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
 
 PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.8)
 proj.data.test = as.matrix(test)%*%PP.opt$proj.best
 proj.data.train = as.matrix(train)%*%PP.opt$proj.best
 plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
 title("PDA, lambda = 0.8")
-misclass(PP.opt$proj.best,t(train),t(test), cls_train, cls_test)
+acc(PP.opt$proj.best,t(train),t(test), cls_train, cls_test)
 ```
 
 ```{r}
-par(mar=c(1,1,1,1))
-par(mfrow = c(2, 2)) 
-PP.opt = PP.optimize.anneal("LDA",2,train,cls_train)
-proj.data.test = as.matrix(test)%*%PP.opt$proj.best
-proj.data.train = as.matrix(train)%*%PP.opt$proj.best
-plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
-err = misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
-title("LDA")
+#implement svm
+train2 = cbind(as.data.frame(train), cls_train)
+train_ctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+svm_classifier <- train(cls_train ~., data = train2, 
+                               method = "svmLinear", 
+                               trControl=train_ctrl,
+                               tuneLength = 10)
+print(sum(predict(svm_classifier, test) == cls_test)/nrow(test))
 
-PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.4)
-proj.data.test = as.matrix(test)%*%PP.opt$proj.best
-proj.data.train = as.matrix(train)%*%PP.opt$proj.best
-plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
-err = misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
-title(TeX(r'(PDA $\lambda=0.4$)'))
-
-PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.6)
-proj.data.test = as.matrix(test)%*%PP.opt$proj.best
-proj.data.train = as.matrix(train)%*%PP.opt$proj.best
-plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
-err = misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
-title(TeX(r'(PDA $\lambda=0.6$)'))
-
-PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.8)
-proj.data.test = as.matrix(test)%*%PP.opt$proj.best
-proj.data.train = as.matrix(train)%*%PP.opt$proj.best
-plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
-err = misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
-title(TeX(r'(PDA $\lambda=0.8$)'))
-```
-
-```{r}
-cross_validation(music, class_artist, 10, seq(0, 1, 0.1), "temp.png")
+svm_classifier <- train(cls_train ~., data = train2, 
+                               method = "svmRadial", 
+                               trControl=train_ctrl,
+                               tuneLength = 10)
+print(sum(predict(svm_classifier, test) == cls_test)/nrow(test))
 ```
 
 ### artist
@@ -104,49 +92,51 @@ cls_test = class_artist[ind]
 cls_train = class_artist[-ind]
 cls_tot = levels(as.factor(class_artist))
 
-#S(music, class, "PDA", 2)
 par(mfrow = c(2, 2)) 
 PP.opt = PP.optimize.anneal("LDA",2,train,cls_train)
 proj.data.test = as.matrix(test)%*%PP.opt$proj.best
 proj.data.train = as.matrix(train)%*%PP.opt$proj.best
 plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
 title("LDA")
-misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
-
+acc(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
 
 PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.4)
 proj.data.test = as.matrix(test)%*%PP.opt$proj.best
 proj.data.train = as.matrix(train)%*%PP.opt$proj.best
 plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
 title("PDA, lambda = 0.4")
-misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
+acc(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
+
+PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.6)
+proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
+title("PDA, lambda = 0.8")
+acc(PP.opt$proj.best,t(train),t(test), cls_train, cls_test)
 
 PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.8)
 proj.data.test = as.matrix(test)%*%PP.opt$proj.best
 proj.data.train = as.matrix(train)%*%PP.opt$proj.best
 plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train, cls_tot)
 title("PDA, lambda = 0.8")
-misclass(PP.opt$proj.best,t(train),t(test), cls_train, cls_test)
+acc(PP.opt$proj.best,t(train),t(test), cls_train, cls_test)
 ```
 
 ```{r}
-PP.opt.lda.genre = PP.optimize.anneal("LDA",1,music,class)
-PP.opt.lda.artist = PP.optimize.anneal("LDA",1,music,class_artist)
-PP.opt.pda.artist = PP.optimize.anneal("PDA",1, music,class_artist,lambda = 0.8)
-PP.opt.pda.genre = PP.optimize.anneal("PDA",1,music,class,lambda = 0.8)
+#implement svm
+train2 = cbind(as.data.frame(train), cls_train)
+train_ctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+svm_classifier <- train(cls_train ~., data = train2, 
+                               method = "svmLinear", 
+                               trControl=train_ctrl,
+                               tuneLength = 10)
+print(sum(predict(svm_classifier, test) == cls_test)/nrow(test))
 
-par(mfrow = c(2, 2)) 
-barplot(height = as.numeric(abs(PP.opt.lda.genre[["proj.best"]])), names = as.factor(1:81))
-title("LDA(genre)")
-barplot(height = as.numeric(abs(PP.opt.lda.artist[["proj.best"]])), names = as.factor(1:81))
-title("LDA(artist)")
-barplot(height = as.numeric(abs(PP.opt.pda.genre[["proj.best"]])), names = as.factor(1:81))
-title("PDA(genre)")
-barplot(height = as.numeric(abs(PP.opt.pda.artist[["proj.best"]])), names = as.factor(1:81))
-title("PDA(artist)")
+svm_classifier <- train(cls_train ~., data = train2, 
+                               method = "svmRadial", 
+                               trControl=train_ctrl,
+                               tuneLength = 10)
+print(sum(predict(svm_classifier, test) == cls_test)/nrow(test))
 ```
 
-```{r}
-cross_validation(music, class_artist, 10, c(0.4, 0.6, 0.8))
-```
 

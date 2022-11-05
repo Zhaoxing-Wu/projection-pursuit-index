@@ -10,4 +10,34 @@ All data used in the paper is contained in the folder `./data`. Plots used in th
 - `./script/extract_music_features.py`: extract features from music clips and generate `./data/music.csv`
 - `./script/music.Rmd`: analyze the music dataset 
 
+## Examples
+```{r}
+library(classPP)
+source("fun.R")
+library(cancerclass)
+data("GOLUB1") #leukemia data
+df = as.data.frame(t(scale(GOLUB1@assayData[["exprs"]]))) #scale????
+cls = GOLUB1@phenoData@data[["class"]] #ALL, AML
+ALL = GOLUB1@phenoData@data[["type"]] #ALL_Tcell, ALL_Bcell
+class = c()
+for (i in 1:length(cls))
+    class = c(class, trimws(paste(cls[i], ALL[i])))
+n = nrow(df)
+
+ind = sample(1:n, n/4, replace=FALSE)
+test = df[ind,]
+train = df[-ind,]
+cls_test = class[ind]
+cls_train = class[-ind]
+PP.opt = PP.optimize.anneal("PDA", 2, train, cls_train, lambda = 0.6)
+proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+plot_test_train(proj.data.test, proj.data.train, cls_test, cls_train,
+               levels(as.factor(class)))
+
+acc(PP.opt$proj.best, t(train), t(test), cls_train, cls_test)
+
+S(as.matrix(df), class, "PDA", 2, seq(0, 0.99, 0.01))
+```
+
 
