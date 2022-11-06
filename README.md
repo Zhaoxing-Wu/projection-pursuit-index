@@ -17,9 +17,9 @@ library(classPP)
 source("fun.R")
 library(cancerclass)
 data("GOLUB1") #leukemia data
-df = as.data.frame(t(scale(GOLUB1@assayData[["exprs"]]))) #scale????
-cls = GOLUB1@phenoData@data[["class"]] #ALL, AML
-ALL = GOLUB1@phenoData@data[["type"]] #ALL_Tcell, ALL_Bcell
+df = as.data.frame(t(scale(GOLUB1@assayData[["exprs"]])))
+cls = GOLUB1@phenoData@data[["class"]] 
+ALL = GOLUB1@phenoData@data[["type"]] 
 class = c()
 for (i in 1:length(cls))
     class = c(class, trimws(paste(cls[i], ALL[i])))
