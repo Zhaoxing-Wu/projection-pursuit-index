@@ -83,6 +83,35 @@ acc = function(a, train, test, cls_train, cls_test){
   return (sum(rst==cls_test)/length(cls_test))
 }
 
+################################################################################
+## MSE and MAE in PDA
+#a: the optimal projection (PP.opt$proj.best)
+#train: traversed train dataset
+#test: traversed test dataset
+#cls_test: vector of classes of test dataset
+#cls_train: vector of classes of train dataset
+#return a vector of two values: the first value is MSE, the second is MAE
+metrics = function(a, train, test, cls_train, cls_test){
+  #get the average of classes in the training dataset
+  cls_mean = data.frame(rep(NA, nrow(train)))
+  for (i in unique(cls_train))
+    cls_mean = cbind(cls_mean, rowMeans(train[, cls_train==i]))
+  cls_mean = cls_mean[,-1] #remove the first column of NA
+  
+  rst = c() #storing predicted class of each test data point
+  for (i in 1:ncol(test)){ #iterate through each test data point
+    temp=c() #storing the distance of one data point to each class
+    for (j in 1:ncol(cls_mean)){ #iterate through each class
+      x = 0 #storing the distance of one data point to one class
+      for (k in 1:ncol(a)) #iterate through the projected dimension
+        x=x+(a[,k]%*%(test[,i]-cls_mean[,j]))^2
+      temp=c(temp, x)
+    }
+    rst = c(rst, unique(cls_train)[which.min(temp)])
+  }
+  return (c(mean((rst - cls_test)^2), mean(abs(rst - cls_test))))
+}
+
 
 ################################################################################
 ##Cross validation for hyperparameter tuning in PDA
