@@ -1,0 +1,173 @@
+---
+title: "simulated_example_plot"
+output: html_document
+date: "2023-03-18"
+---
+
+```{r packages}
+source("fun.R")
+library(classPP)
+library(tidyr)
+library(DiscriMiner)
+library(ggplot2)
+library(latex2exp)
+library(caret)
+library(e1071)
+```
+
+
+## PLOT
+
+```{r}
+library(latex2exp)
+library(tidyverse)
+library(ggplot2)
+library(patchwork)
+cbPalette <- c("#999999", "#0072B2", "#56B4E9", "#009E73", "#D55E00","#E69F00","#F0E442","#CC79A7")
+labels = c("LDA", TeX(r'(PDA $\lambda=0.4$)'),
+                  TeX(r'(PDA $\lambda=0.6$)'),
+                  TeX(r'(PDA $\lambda=0.8$)'),
+                  "SVM(linear)", 
+                  "SVM(RBF)")
+```
+
+```{r}
+df = read.csv("../data/1_perc_imp_var.csv")
+df %>% pivot_longer(cols=c('lda_acc', 'pda4_acc', 
+                           'pda6_acc', 'pda8_acc', 
+                           'svmlinear_acc', 'svmrbf_acc'),
+                    names_to='types',
+                    values_to='value') %>%
+  ggplot(aes(x = x, y = value, group = types)) +
+  geom_line(aes(linetype = types, color = types))+
+  geom_point(aes(color = types, shape = types))+
+  scale_color_manual(values=cbPalette,
+                     labels=labels)+
+  scale_linetype_discrete(labels=labels)+
+  scale_shape_discrete(labels=labels)+
+  theme_bw()+
+  xlab("Percentage of important variables")+
+  ylab("Accuracy")+
+  theme(legend.title=element_blank())
+```  
+
+```{r}
+df = read.csv("../data/2_ratio_dim_obs.csv")
+df %>% pivot_longer(cols=c('lda_acc', 'pda4_acc', 
+                           'pda6_acc', 'pda8_acc', 
+                           'svmlinear_acc', 'svmrbf_acc'),
+                    names_to='types',
+                    values_to='value') %>%
+  ggplot(aes(x = x/500, y = value, group = types)) +
+  geom_line(aes(linetype = types, color = types))+
+  geom_point(aes(color = types, shape = types))+
+  scale_color_manual(values=cbPalette,
+                     labels=labels)+
+  scale_linetype_discrete(labels=labels)+
+  scale_shape_discrete(labels=labels)+
+  theme_bw()+
+  xlab("Ratio between number of observations and dimensions")+
+  ylab("Accuracy")+
+  theme(legend.title=element_blank()) 
+```
+
+```{r}
+df = read.csv("../data/3_num_classes.csv")
+
+df %>%
+  select("x", 'lda_acc', 'pda4_acc', 'pda6_acc', 'pda8_acc', 'svmlinear_acc', 'svmrbf_acc') %>%
+  pivot_longer(cols=c('lda_acc', 'pda4_acc',
+                           'pda6_acc', 'pda8_acc',
+                           'svmlinear_acc', 'svmrbf_acc'),
+                    names_to='types',
+                    values_to='value') %>%
+  ggplot(aes(x = x, y = value, group = types)) +
+  geom_line(aes(linetype = types, color = types))+
+  geom_point(aes(color = types, shape = types))+
+  scale_color_manual(values=cbPalette,
+                     labels=labels)+
+  scale_linetype_discrete(labels=labels)+
+  scale_shape_discrete(labels=labels)+
+  theme_bw()+
+  xlab("Number of classes")+
+  ylab("Accuracy")+
+  scale_x_continuous(breaks=c(2,4,6,8,10,12))+
+  theme(legend.title=element_blank())
+
+df %>%
+  select("x", 'lda_mae', 'pda4_mae', 'pda6_mae', 'pda8_mae', 'svmlinear_mae', 'svmrbf_mae') %>%
+  pivot_longer(cols=c('lda_mae', 'pda4_mae', 'pda6_mae', 'pda8_mae', 'svmlinear_mae', 'svmrbf_mae'),
+                    names_to='types',
+                    values_to='value') %>%
+  ggplot(aes(x = x, y = value, group = types)) +
+  geom_line(aes(linetype = types, color = types))+
+  geom_point(aes(color = types, shape = types))+
+  scale_color_manual(values=cbPalette,
+                     labels=labels)+
+  scale_linetype_discrete(labels=labels)+
+  scale_shape_discrete(labels=labels)+
+  theme_bw()+
+  xlab("Number of classes")+
+  ylab("Mean Absolute Error")+
+  theme(legend.title=element_blank()) +
+  scale_x_continuous(breaks=c(2,4,6,8,10,12))
+
+df %>%
+  select("x", 'lda_mse', 'pda4_mse', 'pda6_mse', 'pda8_mse', 'svmlinear_mse', 'svmrbf_mse') %>%
+  pivot_longer(cols=c('lda_mse', 'pda4_mse', 'pda6_mse', 'pda8_mse', 'svmlinear_mse', 'svmrbf_mse'),
+                    names_to='types',
+                    values_to='value') %>%
+  ggplot(aes(x = x, y = value, group = types)) +
+  geom_line(aes(linetype = types, color = types))+
+  geom_point(aes(color = types, shape = types))+
+  scale_color_manual(values=cbPalette,
+                     labels=labels)+
+  scale_linetype_discrete(labels=labels)+
+  scale_shape_discrete(labels=labels)+
+  theme_bw()+
+  xlab("Number of classes")+
+  ylab("Mean Squared Error")+
+  theme(legend.title=element_blank()) +
+  scale_x_continuous(breaks=c(2,4,6,8,10,12))
+```
+
+```{r}
+par(mfrow = c(1, 2)) 
+df = read.csv("../data/4_outliers_imp.csv")
+plot1 = df %>% pivot_longer(cols=c('lda_acc', 'pda4_acc', 
+                           'pda6_acc', 'pda8_acc', 
+                           'svmlinear_acc', 'svmrbf_acc'),
+                    names_to='types',
+                    values_to='value') %>%
+  ggplot(aes(x = x, y = value, group = types)) +
+  geom_line(aes(linetype = types, color = types))+
+  geom_point(aes(color = types, shape = types))+
+  scale_color_manual(values=cbPalette,
+                     labels=labels)+
+  scale_linetype_discrete(labels=labels)+
+  scale_shape_discrete(labels=labels)+
+  theme_bw()+
+  xlab("Number of outliers added to important variables")+
+  ylab("Accuracy")+
+  theme(legend.title=element_blank()) 
+
+df = read.csv("../data/4_outliers.csv")
+plot2 = df %>% pivot_longer(cols=c('lda_acc', 'pda4_acc', 
+                           'pda6_acc', 'pda8_acc', 
+                           'svmlinear_acc', 'svmrbf_acc'),
+                    names_to='types',
+                    values_to='value') %>%
+  ggplot(aes(x = x, y = value, group = types)) +
+  geom_line(aes(linetype = types, color = types))+
+  geom_point(aes(color = types, shape = types))+
+  scale_color_manual(values=cbPalette,
+                     labels=labels)+
+  scale_linetype_discrete(labels=labels)+
+  scale_shape_discrete(labels=labels)+
+  theme_bw()+
+  xlab("Number of outliers added to unimportant variables")+
+  ylab("Accuracy")+
+  theme(legend.title=element_blank()) 
+plot1/plot2+ plot_layout(guides = 'collect')
+```
+
