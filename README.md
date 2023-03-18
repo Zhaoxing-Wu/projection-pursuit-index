@@ -2,13 +2,16 @@
 
 This is the repository for the paper "Assessment of projection pursuit index for classifying high dimension low sample size data in R" by Zhaoxing Wu and Chunming Zhang.
 
-All data used in the paper is contained in the folder `./data`. Plots used in the paper is contained in the folder `./output`. `./script` includes all the code.
+- `./data` contains all data used in the paper. 
+- `./output` contains all plots used in the paper. 
+- `./script` includes all the code.
+  - `./script/fun.R`: useful functions, including `S()`, `plot_test_train()`, `acc()`, `cross_validation()`. Section 2 of the paper also explains these functions in details.
 
-- `./script/fun.R`: useful functions used by the following scripts. Include `S()`, `plot_test_train()`, `acc()`, `cross_validation()`. Section 2 of the paper also explains these functions in details
-- `./script/simulated_example.Rmd`: simulate datasets under 4 different conditions (section 3: simulation evaluation), including `./data/1_perc_imp_var.csv`, `./data/2_ratio_dim_obs.csv`, `./data/3_num_classes.csv`, `./data/4_outliers_imp.csv`, `./data/4_outliers.csv`. There is also one simulation on non-Gaussian distributed data (section 5: discussion and conclusion). Code plotting the above datasets is also contained in this script
-- `./script/datamicroarray.Rmd`: analyze different microarray datasets (section 4.1: microarray data)
-- `./script/extract_music_features.py`: extract features from music clips and generate `./data/music.csv` (section 4.2: music data)
-- `./script/music.Rmd`: analyze the music dataset (section 4.2: music data)
+## To reproduce the experiments in the paper
+- Simulation study (section 3: simulation evaluation): Run `./script/simulated_example.Rmd` to simulate datasets under 4 different conditions, including `./data/1_perc_imp_var.csv`, `./data/2_ratio_dim_obs.csv`, `./data/3_num_classes.csv`, `./data/4_outliers_imp.csv`, `./data/4_outliers.csv`. Code plotting the above datasets is also contained in `./script/simulated_example_plot.Rmd`
+- Microarray data analysis (section 4.1: microarray data): Run `./script/datamicroarray.Rmd` to analyze different microarray datasets. Please note that different microarray datasets are analyzed in this paper and all contained in the R package `datamicroarray`, so one need to manually change the code to use different datasets to reproduce the results (instructions can be found in the comments of the code).
+- Music data analysis (section 4.2: music data): Run `./script/extract_music_features.py` to extract features from music clips and generate `./data/music.csv`. The music clips can be found in `./data/processed_music/*`. Run `./script/music.Rmd` to analyze the music dataset.
+- Non-Gaussian distributed data analysis (section 5: discussion and conclusion): Run the last chunck of code in `./script/simulated_example.Rmd`. The mean values of different model performance are printed to the screen.
 
 ## Examples
 The following code loads leukemia dataset and splits it into training and test sets.
