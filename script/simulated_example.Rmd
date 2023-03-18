@@ -12,7 +12,7 @@ library(ggplot2)
 library(latex2exp)
 library(caret)
 library(e1071)
-nrun = 1
+nrun = 20
 ```
 
 ## Simulation 1: percentage of important variables
