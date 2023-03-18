@@ -1,4 +1,4 @@
-,x,lda_acc,pda4_acc,pda6_acc,pda8_acc,svm_linear,svm_rbf
+,x,lda_acc,pda4_acc,pda6_acc,pda8_acc,svmlinear_acc,svmrbf_acc
 1,0,0.64,0.96,0.96,0.96,0.94,0.6
 2,1,0.58,0.74,0.7,0.7,0.72,0.48
 3,2,0.58,0.6,0.5,0.62,0.62,0.4

@@ -3,6 +3,7 @@ import numpy as np
 from scipy.stats import kurtosis
 from scipy.stats import skew
 import pandas as pd
+import matplotlib
 
 kurtosis_music = []
 skew_music = []
@@ -87,7 +88,7 @@ spectral_bandwidth_3_sd = []
 spectral_bandwidth_4_sd = []
 
 
-for filename in glob.glob("./processed_music/*.wav"):
+for filename in glob.glob("../data/processed_music/*.wav"):
     #x: time series
     #sr: sampling rate
     x, sr = librosa.load(filename)
@@ -96,20 +97,20 @@ for filename in glob.glob("./processed_music/*.wav"):
     mean_music.append(np.mean(x))
     sd_music.append(np.std(x))
 
-    zero_cros = librosa.zero_crossings(x, pad=False)
+    zero_cros = librosa.zero_crossings(y=x, pad=False)
     zero_crossing.append(sum(zero_cros))
     zero_crossing_mean.append(np.mean(zero_cros))
     zero_crossing_sd.append(np.std(zero_cros))
 
-    spectral_centroids = librosa.feature.spectral_centroid(x, sr=sr)
+    spectral_centroids = librosa.feature.spectral_centroid(y=x, sr=sr)
     spectral_centroids_mean.append(np.mean(spectral_centroids))
     spectral_centroids_sd.append(np.std(spectral_centroids))
 
-    spectral_rolloff = librosa.feature.spectral_rolloff(x, sr=sr)
+    spectral_rolloff = librosa.feature.spectral_rolloff(y=x, sr=sr)
     spectral_rolloff_mean.append(np.mean(spectral_rolloff))
     spectral_rolloff_sd.append(np.std(spectral_rolloff))
 
-    mfccs = librosa.feature.mfcc(x, sr=sr)
+    mfccs = librosa.feature.mfcc(y=x, sr=sr)
     mfccs1_mean.append(np.mean(mfccs[0,:]))
     mfccs1_sd.append(np.std(mfccs[0,:]))
     mfccs2_mean.append(np.mean(mfccs[1,:]))
@@ -151,7 +152,7 @@ for filename in glob.glob("./processed_music/*.wav"):
     mfccs20_mean.append(np.mean(mfccs[19,:]))
     mfccs20_sd.append(np.std(mfccs[19,:]))
 
-    chroma_stft = librosa.feature.chroma_stft(x, sr)
+    chroma_stft = librosa.feature.chroma_stft(y=x, sr=sr)
     chroma_stft1_mean.append(np.mean(chroma_stft[0,:]))
     chroma_stft1_sd.append(np.std(chroma_stft[0,:]))
     chroma_stft2_mean.append(np.mean(chroma_stft[1,:]))
@@ -177,9 +178,9 @@ for filename in glob.glob("./processed_music/*.wav"):
     chroma_stft12_mean.append(np.mean(chroma_stft[11,:]))
     chroma_stft12_sd.append(np.std(chroma_stft[11,:]))
 
-    spectral_bandwidth_2 = librosa.feature.spectral_bandwidth(x+0.01, sr=sr)[0]
-    spectral_bandwidth_3 = librosa.feature.spectral_bandwidth(x+0.01, sr=sr, p=3)[0]
-    spectral_bandwidth_4 = librosa.feature.spectral_bandwidth(x+0.01, sr=sr, p=4)[0]
+    spectral_bandwidth_2 = librosa.feature.spectral_bandwidth(y=x+0.01, sr=sr)[0]
+    spectral_bandwidth_3 = librosa.feature.spectral_bandwidth(y=x+0.01, sr=sr, p=3)[0]
+    spectral_bandwidth_4 = librosa.feature.spectral_bandwidth(y=x+0.01, sr=sr, p=4)[0]
     spectral_bandwidth_2_mean.append(np.mean(spectral_bandwidth_2))
     spectral_bandwidth_3_mean.append(np.mean(spectral_bandwidth_3))
     spectral_bandwidth_4_mean.append(np.mean(spectral_bandwidth_4))
@@ -191,7 +192,7 @@ for filename in glob.glob("./processed_music/*.wav"):
     #tempo, beat_frames = librosa.beat.beat_track(y=x, sr=sr)
     #contrast = librosa.feature.spectral_contrast(y=x, sr=sr)
 
-df = pd.DataFrame({'name': glob.glob("./processed_music/*.wav"),
+df = pd.DataFrame({'name': glob.glob("../data/processed_music/*.wav"),
                    'kurtosis_music': kurtosis_music,
                    'skew_music': skew_music,
                    'mean_music': mean_music,

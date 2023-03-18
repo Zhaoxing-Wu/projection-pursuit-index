@@ -117,6 +117,7 @@ pda8_acc = c()
 svmlinear_acc = c()
 svmrbf_acc = c()
 x = seq(10, 100, by = 6)
+suppressWarnings({
 for (i in x){ 
   print(i)
   n = i
@@ -131,6 +132,7 @@ for (i in x){
   svmlinear_temp = c()
   svmrbf_temp = c()
   
+
   for (j in 1:nrun){ #compute accuracy score for 20 times
     df = scale(as.data.frame(cbind(
       rbind(matrix(rnorm(n/2*num_imp, 2.2),,num_imp),
@@ -170,18 +172,13 @@ for (i in x){
     
     cls_train = as.factor(cls_train)
     train2 = cbind(as.data.frame(train), cls_train)
-    train_ctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
-    svm_classifier <- train(cls_train ~., data = train2, 
-                               method = "svmLinear", 
-                               trControl=train_ctrl,
-                               tuneLength = 10)
+    svm_classifier <- train(cls_train ~., data = as.data.frame(train2), 
+                               method = "svmLinear", tuneLength = 1)
     svmlinear_temp = c(svmlinear_temp, 
                     sum(predict(svm_classifier, test) == cls_test)/nrow(test))
 
-    svm_classifier <- train(cls_train ~., data = train2, 
-                               method = "svmRadial", 
-                               trControl=train_ctrl,
-                               tuneLength = 10)
+    svm_classifier <- train(cls_train ~., data = as.data.frame(train2), 
+                               method = "svmRadial", tuneLength = 1)
     svmrbf_temp = c(svmrbf_temp, 
                     sum(predict(svm_classifier, test) == cls_test)/nrow(test))
   }
@@ -191,12 +188,13 @@ for (i in x){
   pda8_acc = c(pda8_acc, mean(pda8_temp))
   svmlinear_acc = c(svmlinear_acc, mean(svmlinear_temp))
   svmrbf_acc = c(svmrbf_acc, mean(svmrbf_temp))
-}
+  }
+})
 
 write.csv(cbind(x, lda_acc, pda4_acc, pda6_acc, pda8_acc, svmlinear_acc, svmrbf_acc), "2_ratio_dim_obs.csv")
 ```
 
-## Simulation 3: effect of outliers
+## Simulation 3.1: effect of outliers on important variables
 
 ```{r}
 lda_acc  = c()
@@ -226,7 +224,102 @@ for (i in x){
       matrix(rnorm(n*num_unimp),,num_unimp))))
   
     if (i != 0){
-      #for (var in 1:num_imp){ #add outliers to all important variables
+      for (var in 1:num_imp){ #add outliers to all important variables
+        for (num_outlier in 1:i){
+          ind = sample.int(n,1)
+          df[ind, var] = rnorm(1, 0, 15)
+        }
+      }
+    }
+  
+    df = scale(df)
+    class = c(rep(1, n/2), rep(2, n/2))
+
+    ind = sample(1:n, round(n*0.25, 0), replace=FALSE)
+    test = df[ind,]
+    train = df[-ind,]
+    cls_test = class[ind]
+    cls_train = class[-ind]
+
+    PP.opt = PP.optimize.anneal("LDA",2,train,cls_train)
+    proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+    proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+    lda_temp = c(lda_temp, acc(PP.opt$proj.best, t(train), t(test), cls_train, cls_test))
+    
+    PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.4)
+    proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+    proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+    pda4_temp = c(pda4_temp, acc(PP.opt$proj.best, t(train), t(test), cls_train, cls_test))
+    
+    PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.6)
+    proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+    proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+    pda6_temp = c(pda6_temp, acc(PP.opt$proj.best, t(train), t(test), cls_train, cls_test))
+    
+    PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.8)
+    proj.data.test = as.matrix(test)%*%PP.opt$proj.best
+    proj.data.train = as.matrix(train)%*%PP.opt$proj.best
+    pda8_temp = c(pda8_temp, acc(PP.opt$proj.best, t(train), t(test), cls_train, cls_test))
+    
+    cls_train = as.factor(cls_train)
+    train2 = cbind(as.data.frame(train), cls_train)
+    train_ctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+    svm_classifier <- train(cls_train ~., data = train2, 
+                               method = "svmLinear", 
+                               trControl=train_ctrl,
+                               tuneLength = 10)
+    svmlinear_temp = c(svmlinear_temp, 
+                    sum(predict(svm_classifier, test) == cls_test)/nrow(test))
+
+    svm_classifier <- train(cls_train ~., data = train2, 
+                               method = "svmRadial", 
+                               trControl=train_ctrl,
+                               tuneLength = 10)
+    svmrbf_temp = c(svmrbf_temp, 
+                    sum(predict(svm_classifier, test) == cls_test)/nrow(test))
+  }
+  lda_acc  = c(lda_acc,  mean(lda_temp))
+  pda4_acc = c(pda4_acc, mean(pda4_temp))
+  pda6_acc = c(pda6_acc, mean(pda6_temp))
+  pda8_acc = c(pda8_acc, mean(pda8_temp))
+  svmlinear_acc = c(svmlinear_acc, mean(svmlinear_temp))
+  svmrbf_acc = c(svmrbf_acc, mean(svmrbf_temp))
+}
+
+
+write.csv(cbind(x, lda_acc, pda4_acc, pda6_acc, pda8_acc, svmlinear_acc, svmrbf_acc), "4_outliers_imp.csv")
+```
+
+## Simulation 3.2: effect of outliers on unimportant variables
+
+```{r}
+lda_acc  = c()
+pda4_acc = c()
+pda6_acc = c()
+pda8_acc = c()
+svmlinear_acc = c()
+svmrbf_acc = c()
+x = seq(0, 16, by = 1)
+for (i in x){ 
+  n = 40
+  p = 500
+  num_imp = 10
+  num_unimp = p-num_imp
+  
+    
+  lda_temp  = c()
+  pda4_temp = c()
+  pda6_temp = c()
+  pda8_temp = c()
+  svmlinear_temp = c()
+  svmrbf_temp = c()
+  for (j in 1:nrun){ 
+    df = scale(as.data.frame(cbind(
+      rbind(matrix(rnorm(n/2*num_imp, 2.2),,num_imp), 
+            matrix(rnorm(n/2*num_imp, -2.2),,num_imp)),
+      matrix(rnorm(n*num_unimp),,num_unimp))))
+  
+    if (i != 0){
       for (var in (num_imp+1):p){ #add outliers to all variables except important variables
         for (num_outlier in 1:i){
           ind = sample.int(n,1)
@@ -404,8 +497,9 @@ for (i in x){
                                method = "svmLinear", 
                                trControl=train_ctrl,
                                tuneLength = 10)
+    y_pred = predict(svm_classifier, test)
     svmlinear_temp = c(svmlinear_temp, 
-                    sum(predict(svm_classifier, test) == cls_test)/nrow(test))
+                    sum(y_pred == cls_test)/nrow(test))
     svmlinear_mse_temp = c(svmlinear_mse_temp, mean((as.numeric(y_pred) - cls_test)^2))
     svmlinear_mae_temp = c(svmlinear_mae_temp, mean(abs(as.numeric(y_pred) - cls_test)))
 
@@ -413,8 +507,9 @@ for (i in x){
                                method = "svmRadial", 
                                trControl=train_ctrl,
                                tuneLength = 10)
+    y_pred = predict(svm_classifier, test)
     svmrbf_temp = c(svmrbf_temp, 
-                    sum(predict(svm_classifier, test) == cls_test)/nrow(test))
+                    sum(y_pred == cls_test)/nrow(test))
     svmrbf_mse_temp = c(svmrbf_mse_temp, mean((as.numeric(y_pred) - cls_test)^2))
     svmrbf_mae_temp = c(svmrbf_mae_temp, mean(abs(as.numeric(y_pred) - cls_test)))
   }
@@ -472,22 +567,22 @@ for (j in 1:nrun){ #compute accuracy score for 20 times
     PP.opt = PP.optimize.anneal("LDA",2,train,cls_train)
     proj.data.test = as.matrix(test)%*%PP.opt$proj.best
     proj.data.train = as.matrix(train)%*%PP.opt$proj.best
-    lda_temp = c(lda_temp, misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test))
+    lda_temp = c(lda_temp, acc(PP.opt$proj.best, t(train), t(test), cls_train, cls_test))
     
     PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.4)
     proj.data.test = as.matrix(test)%*%PP.opt$proj.best
     proj.data.train = as.matrix(train)%*%PP.opt$proj.best
-    pda4_temp = c(pda4_temp, misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test))
+    pda4_temp = c(pda4_temp, acc(PP.opt$proj.best, t(train), t(test), cls_train, cls_test))
     
     PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.6)
     proj.data.test = as.matrix(test)%*%PP.opt$proj.best
     proj.data.train = as.matrix(train)%*%PP.opt$proj.best
-    pda6_temp = c(pda6_temp, misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test))
+    pda6_temp = c(pda6_temp, acc(PP.opt$proj.best, t(train), t(test), cls_train, cls_test))
     
     PP.opt = PP.optimize.anneal("PDA",2,train,cls_train,lambda = 0.8)
     proj.data.test = as.matrix(test)%*%PP.opt$proj.best
     proj.data.train = as.matrix(train)%*%PP.opt$proj.best
-    pda8_temp = c(pda8_temp, misclass(PP.opt$proj.best, t(train), t(test), cls_train, cls_test))
+    pda8_temp = c(pda8_temp, acc(PP.opt$proj.best, t(train), t(test), cls_train, cls_test))
     
     
   classifier = svm(formula = cls_train ~ .,
@@ -497,6 +592,11 @@ for (j in 1:nrun){ #compute accuracy score for 20 times
     y_pred = predict(classifier, newdata = test)
     svm_temp = c(svm_temp, sum(y_pred == cls_test)/nrow(test))
 }
+print(mean(lda_temp))
+print(mean(pda4_temp))
+print(mean(pda6_temp))
+print(mean(pda8_temp))
+print(mean(svm_temp))
 ```
 
 ## PLOT
@@ -518,7 +618,7 @@ labels = c("LDA", TeX(r'(PDA $\lambda=0.4$)'),
 df = read.csv("../data/1_perc_imp_var.csv")
 df %>% pivot_longer(cols=c('lda_acc', 'pda4_acc', 
                            'pda6_acc', 'pda8_acc', 
-                           'svm_linear', 'svm_rbf'),
+                           'svmlinear_acc', 'svmrbf_acc'),
                     names_to='types',
                     values_to='value') %>%
   ggplot(aes(x = x, y = value, group = types)) +
@@ -538,7 +638,7 @@ df %>% pivot_longer(cols=c('lda_acc', 'pda4_acc',
 df = read.csv("../data/2_ratio_dim_obs.csv")
 df %>% pivot_longer(cols=c('lda_acc', 'pda4_acc', 
                            'pda6_acc', 'pda8_acc', 
-                           'svm_linear', 'svm_rbf'),
+                           'svmlinear_acc', 'svmrbf_acc'),
                     names_to='types',
                     values_to='value') %>%
   ggplot(aes(x = x/500, y = value, group = types)) +
@@ -558,7 +658,7 @@ df %>% pivot_longer(cols=c('lda_acc', 'pda4_acc',
 df = read.csv("../data/3_num_classes.csv")
 df %>% pivot_longer(cols=c('lda_acc', 'pda4_acc', 
                            'pda6_acc', 'pda8_acc', 
-                           'svm_linear', 'svm_rbf'),
+                           'svmlinear_acc', 'svmrbf_acc'),
                     names_to='types',
                     values_to='value') %>%
   ggplot(aes(x = x, y = value, group = types)) +
@@ -579,7 +679,7 @@ par(mfrow = c(1, 2))
 df = read.csv("../data/4_outliers_imp.csv")
 plot1 = df %>% pivot_longer(cols=c('lda_acc', 'pda4_acc', 
                            'pda6_acc', 'pda8_acc', 
-                           'svm_linear', 'svm_rbf'),
+                           'svmlinear_acc', 'svmrbf_acc'),
                     names_to='types',
                     values_to='value') %>%
   ggplot(aes(x = x, y = value, group = types)) +
@@ -597,7 +697,7 @@ plot1 = df %>% pivot_longer(cols=c('lda_acc', 'pda4_acc',
 df = read.csv("../data/4_outliers.csv")
 plot2 = df %>% pivot_longer(cols=c('lda_acc', 'pda4_acc', 
                            'pda6_acc', 'pda8_acc', 
-                           'svm_linear', 'svm_rbf'),
+                           'svmlinear_acc', 'svmrbf_acc'),
                     names_to='types',
                     values_to='value') %>%
   ggplot(aes(x = x, y = value, group = types)) +
@@ -614,4 +714,70 @@ plot2 = df %>% pivot_longer(cols=c('lda_acc', 'pda4_acc',
 plot1/plot2+ plot_layout(guides = 'collect')
 ```
 
+Make plot for accuracy, MSE, MAE for the 3rd simulation scenario
 
+```{r}
+# df = read.csv("./simulate_data/3_num_classes.csv")
+# 
+# png("3_num_classes_acc.png", width = 8, height = 6, units = 'in', res = 300)
+# df %>% 
+#   select("x", 'lda_acc', 'pda4_acc', 'pda6_acc', 'pda8_acc', 'svm_linear_acc', 'svm_rbf_acc') %>%
+#   pivot_longer(cols=c('lda_acc', 'pda4_acc', 
+#                            'pda6_acc', 'pda8_acc', 
+#                            'svm_linear_acc', 'svm_rbf_acc'),
+#                     names_to='types',
+#                     values_to='value') %>%
+#   ggplot(aes(x = x, y = value, group = types)) +
+#   geom_line(aes(linetype = types, color = types))+
+#   geom_point(aes(color = types, shape = types))+
+#   scale_color_manual(values=cbPalette,
+#                      labels=labels)+
+#   scale_linetype_discrete(labels=labels)+
+#   scale_shape_discrete(labels=labels)+
+#   theme_bw()+
+#   xlab("Number of classes")+
+#   ylab("Accuracy")+
+#   scale_x_continuous(breaks=c(2,4,6,8,10,12))+
+#   theme(legend.title=element_blank()) 
+# dev.off()
+# 
+# png("3_num_classes_mae.png", width = 8, height = 6, units = 'in', res = 300)
+# df %>% 
+#   select("x", 'lda_mae', 'pda4_mae', 'pda6_mae', 'pda8_mae', 'svm_linear_mae', 'svm_rbf_mae') %>%
+#   pivot_longer(cols=c('lda_mae', 'pda4_mae', 'pda6_mae', 'pda8_mae', 'svm_linear_mae', 'svm_rbf_mae'),
+#                     names_to='types',
+#                     values_to='value') %>%
+#   ggplot(aes(x = x, y = value, group = types)) +
+#   geom_line(aes(linetype = types, color = types))+
+#   geom_point(aes(color = types, shape = types))+
+#   scale_color_manual(values=cbPalette,
+#                      labels=labels)+
+#   scale_linetype_discrete(labels=labels)+
+#   scale_shape_discrete(labels=labels)+
+#   theme_bw()+
+#   xlab("Number of classes")+
+#   ylab("Mean Absolute Error")+
+#   theme(legend.title=element_blank()) +
+#   scale_x_continuous(breaks=c(2,4,6,8,10,12))
+# dev.off()
+# 
+# png("3_num_classes_mse.png", width = 8, height = 6, units = 'in', res = 300)
+# df %>% 
+#   select("x", 'lda_mse', 'pda4_mse', 'pda6_mse', 'pda8_mse', 'svm_linear_mse', 'svm_rbf_mse') %>%
+#   pivot_longer(cols=c('lda_mse', 'pda4_mse', 'pda6_mse', 'pda8_mse', 'svm_linear_mse', 'svm_rbf_mse'),
+#                     names_to='types',
+#                     values_to='value') %>%
+#   ggplot(aes(x = x, y = value, group = types)) +
+#   geom_line(aes(linetype = types, color = types))+
+#   geom_point(aes(color = types, shape = types))+
+#   scale_color_manual(values=cbPalette,
+#                      labels=labels)+
+#   scale_linetype_discrete(labels=labels)+
+#   scale_shape_discrete(labels=labels)+
+#   theme_bw()+
+#   xlab("Number of classes")+
+#   ylab("Mean Squared Error")+
+#   theme(legend.title=element_blank()) +
+#   scale_x_continuous(breaks=c(2,4,6,8,10,12))
+# dev.off()
+```
