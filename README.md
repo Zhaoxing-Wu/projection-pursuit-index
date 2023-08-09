@@ -6,6 +6,22 @@ This is the repository for the paper "Assessment of projection pursuit index for
 - `./output` contains all plots used in the paper. 
 - `./script` includes all the code.
   - `./script/fun.R`: useful functions, including `S()`, `plot_test_train()`, `acc()`, `cross_validation()`. Section 2 of the paper also explains these functions in details.
+    
+## Citation
+```
+@article{wu_zhang_2023,
+    author = {Zhaoxing Wu and Chunming Zhang},
+    title = {Assessment of Projection Pursuit Index for Classifying High Dimension Low Sample Size Data in R},
+    journal = {Journal of Data Science},
+    volume = {21},
+    number = {2},
+    year = {2023},
+    pages = {310--332},
+    doi = {10.6339/23-JDS1096},
+    issn = {1680-743X},
+    publisher = {School of Statistics, Renmin University of China}
+}
+```
 
 ## To reproduce the experiments in the paper
 - Simulation study (section 3: simulation evaluation): Run `./script/simulated_example.Rmd` to simulate datasets under 4 different conditions, including `./data/1_perc_imp_var.csv`, `./data/2_ratio_dim_obs.csv`, `./data/3_num_classes.csv`, `./data/4_outliers_imp.csv`, `./data/4_outliers.csv`. Code plotting the above datasets is also contained in `./script/simulated_example_plot.Rmd`
